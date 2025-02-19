@@ -26,19 +26,30 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 
+type Application = {
+  role: string;
+  applicant: string;
+  status: 'pending' | 'accepted' | 'rejected';
+};
+
+type TeamMember = {
+  name: string;
+  role: string;
+};
+
+type Startup = {
+  owner: string;
+  password: string;
+  id: number;
+  name: string;
+  description: string;
+  roles: string;
+  members: TeamMember[];
+  applications: Application[];
+};
+
 export default function Feed() {
-  const [startups, setStartups] = useState<
-    {
-      owner: string;
-      password: string;
-      id: number;
-      name: string;
-      description: string;
-      roles: string;
-      members: string | null;
-      applications: { role: string; applicant: string }[];
-    }[]
-  >([]);
+  const [startups, setStartups] = useState<Startup[]>([]);
   
   const [formData, setFormData] = useState({
     owner: "",
@@ -64,11 +75,11 @@ export default function Feed() {
   const handleSubmit = (e: any) => {
     e.preventDefault();
     if (formData.name && formData.description && formData.roles && formData.password) {
-      const newStartup = {
+      const newStartup: Startup = {
         ...formData,
         id: Date.now(),
-        members: null,
-        applications: [] as { role: string; applicant: string }[]
+        members: [],
+        applications: []
       };
       setStartups([...startups, newStartup]);
       setFormData({
@@ -84,17 +95,50 @@ export default function Feed() {
   const handleApply = (startupId: number, role: string, name: string) => {
     if (!name) return;
     
-    setStartups(startups.map(startup => {
-      if (startup.id === startupId) {
-        return {
-          ...startup,
-          applications: [...(startup.applications || []), { role, applicant: name }]
-        };
-      }
-      return startup;
-    }));
+    setStartups(prevStartups => 
+      prevStartups.map(startup => {
+        if (startup.id === startupId) {
+          const newApplication: Application = {
+            role,
+            applicant: name,
+            status: 'pending'
+          };
+          return {
+            ...startup,
+            applications: [...startup.applications, newApplication]
+          };
+        }
+        return startup;
+      })
+    );
 
     setApplicants({ ...applicants, [role]: "" });
+  };
+
+  const handleAcceptApplication = (startupId: number, application: Application) => {
+    setStartups(prevStartups => 
+      prevStartups.map(startup => {
+        if (startup.id === startupId) {
+          const updatedApplications = startup.applications.map(app => 
+            app.applicant === application.applicant && app.role === application.role
+              ? { ...app, status: 'accepted' as const }
+              : app
+          );
+
+          const newMember: TeamMember = {
+            name: application.applicant,
+            role: application.role
+          };
+
+          return {
+            ...startup,
+            applications: updatedApplications,
+            members: [...startup.members, newMember]
+          };
+        }
+        return startup;
+      })
+    );
   };
 
   const handleAuthSubmit = (startupId: number) => {
@@ -108,14 +152,6 @@ export default function Feed() {
       });
       return;
     }
-
-    // For debugging - remove in production
-    console.log('Checking auth:', {
-      inputOwner: authState.ownerInput,
-      actualOwner: startup.owner,
-      inputPassword: authState.passwordInput,
-      actualPassword: startup.password
-    });
 
     if (authState.ownerInput === startup.owner && authState.passwordInput === startup.password) {
       setAuthState({
@@ -297,19 +333,58 @@ export default function Feed() {
                         <p className="text-red-500 text-center">{authState.error}</p>
                       )}
                       {authState.isAuthenticated && authState.currentStartupId === startup.id && (
-                        <div className="space-y-4">
-                          <h3 className="font-medium">Applications:</h3>
-                          {startup.applications && startup.applications.length > 0 ? (
-                            startup.applications.map((app, index) => (
-                              <div key={index} className="border p-2 rounded">
-                                <p><strong>Role:</strong> {app.role}</p>
-                                <p><strong>Applicant:</strong> {app.applicant}</p>
+                        <div className="space-y-6">
+                          <div>
+                            <h3 className="font-medium mb-2">Current Team Members:</h3>
+                            {startup.members.length > 0 ? (
+                              <div className="space-y-2">
+                                {startup.members.map((member, index) => (
+                                  <div key={index} className="border p-2 rounded bg-black-500">
+                                    <p><strong>{member.name}</strong> - {member.role}</p>
+                                  </div>
+                                ))}
                               </div>
-                            ))
-                          ) : (
-                            <p>No applications yet.</p>
-                          )}
+                            ) : (
+                              <p>No team members yet</p>
+                            )}
+                          </div>
+                          
+                          <div>
+                            <h3 className="font-medium mb-2">Pending Applications:</h3>
+                            {startup.applications.filter(app => app.status === 'pending').length > 0 ? (
+                              <div className="space-y-2">
+                                {startup.applications
+                                  .filter(app => app.status === 'pending')
+                                  .map((app, index) => (
+                                    <div key={index} className="border p-2 rounded flex justify-between items-center">
+                                      <div>
+                                        <p><strong>Role:</strong> {app.role}</p>
+                                        <p><strong>Applicant:</strong> {app.applicant}</p>
+                                      </div>
+                                      <Button 
+                                        onClick={() => handleAcceptApplication(startup.id, app)}
+                                        size="sm"
+                                      >
+                                        Accept
+                                      </Button>
+                                    </div>
+                                  ))
+                              }
+                              </div>
+                            ) : (
+                              <p>No pending applications</p>
+                            )}
+                          </div>
                         </div>
+                      )}
+
+                      {authState.isAuthenticated && authState.currentStartupId === startup.id && (
+                        <Button 
+                          type="button" 
+                          onClick={() => window.location.href = `/groupChat`}
+                        >
+                          Go to Group Chat
+                        </Button>
                       )}
                     </div>
                     <DialogFooter>
