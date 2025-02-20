@@ -20,18 +20,65 @@ type ChatMember = {
   online: boolean;
 };
 
-export default function GroupChat() {
+type Application = {
+  role: string;
+  applicant: string;
+  status: "pending" | "accepted" | "rejected";
+};
+
+type TeamMember = {
+  name: string;
+  role: string;
+};
+
+type Startup = {
+  owner: string;
+  password: string;
+  id: number;
+  name: string;
+  description: string;
+  roles: string;
+  members: TeamMember[];
+  applications: Application[];
+};
+
+interface GroupChatProps {
+  startupData?: Startup;
+}
+
+export default function GroupChat({ startupData }: GroupChatProps) {
+  const [startup, setStartup] = useState<Startup | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState("");
   const [currentUser, setCurrentUser] = useState({
     name: "",
     role: "",
   });
-  const [members, setMembers] = useState<ChatMember[]>([
-    { name: "John Doe", role: "Developer", online: true },
-    { name: "Jane Smith", role: "Designer", online: false },
-    // Add more mock members as needed
-  ]);
+  const [hasJoined, setHasJoined] = useState(false);
+  const [members, setMembers] = useState<ChatMember[]>([]);
+
+  useEffect(() => {
+    if (startupData) {
+      setStartup(startupData);
+      setMembers(
+        startupData.members.map((member: TeamMember) => ({
+          name: member.name,
+          role: member.role,
+          online: true,
+        }))
+      );
+    }
+  }, [startupData]);
+
+  const handleJoinChat = () => {
+    if (currentUser.name.trim() && currentUser.role.trim()) {
+      setMembers([
+        ...members,
+        { ...currentUser, online: true },
+      ]);
+      setHasJoined(true);
+    }
+  };
 
   const sendMessage = (e: React.FormEvent) => {
     e.preventDefault();
@@ -61,10 +108,13 @@ export default function GroupChat() {
                   <div className="relative">
                     <Avatar>
                       <AvatarFallback>
-                        {member.name.split(" ").map(n => n[0]).join("")}
+                        {member.name
+                          .split(" ")
+                          .map((n) => n[0])
+                          .join("")}
                       </AvatarFallback>
                     </Avatar>
-                    <div 
+                    <div
                       className={`absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-white ${
                         member.online ? "bg-green-500" : "bg-gray-400"
                       }`}
@@ -84,33 +134,34 @@ export default function GroupChat() {
       {/* Chat area */}
       <Card className="flex-1 h-full">
         <CardContent className="p-4 h-full flex flex-col">
-          {!currentUser.name ? (
+          {!hasJoined ? (
             <div className="flex-1 flex items-center justify-center">
               <div className="w-72 space-y-4">
                 <h2 className="text-xl font-bold text-center">Join the Chat</h2>
                 <Input
                   placeholder="Your Name"
                   value={currentUser.name}
-                  onChange={(e) => setCurrentUser({
-                    ...currentUser,
-                    name: e.target.value
-                  })}
+                  onChange={(e) =>
+                    setCurrentUser({
+                      ...currentUser,
+                      name: e.target.value,
+                    })
+                  }
                 />
                 <Input
                   placeholder="Your Role"
                   value={currentUser.role}
-                  onChange={(e) => setCurrentUser({
-                    ...currentUser,
-                    role: e.target.value
-                  })}
+                  onChange={(e) =>
+                    setCurrentUser({
+                      ...currentUser,
+                      role: e.target.value,
+                    })
+                  }
                 />
-                <Button 
+                <Button
                   className="w-full"
-                  onClick={() => {
-                    if (currentUser.name && currentUser.role) {
-                      setMembers([...members, { ...currentUser, online: true }]);
-                    }
-                  }}
+                  onClick={handleJoinChat}
+                  disabled={!currentUser.name.trim() || !currentUser.role.trim()}
                 >
                   Join Chat
                 </Button>

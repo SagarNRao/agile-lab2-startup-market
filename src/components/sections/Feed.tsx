@@ -29,7 +29,7 @@ import {
 type Application = {
   role: string;
   applicant: string;
-  status: 'pending' | 'accepted' | 'rejected';
+  status: "pending" | "accepted" | "rejected";
 };
 
 type TeamMember = {
@@ -50,7 +50,7 @@ type Startup = {
 
 export default function Feed() {
   const [startups, setStartups] = useState<Startup[]>([]);
-  
+
   const [formData, setFormData] = useState({
     owner: "",
     password: "",
@@ -65,7 +65,7 @@ export default function Feed() {
     passwordInput: "",
     error: "",
     isAuthenticated: false,
-    currentStartupId: null as number | null
+    currentStartupId: null as number | null,
   });
 
   const handleChange = (e: any) => {
@@ -74,12 +74,17 @@ export default function Feed() {
 
   const handleSubmit = (e: any) => {
     e.preventDefault();
-    if (formData.name && formData.description && formData.roles && formData.password) {
+    if (
+      formData.name &&
+      formData.description &&
+      formData.roles &&
+      formData.password
+    ) {
       const newStartup: Startup = {
         ...formData,
         id: Date.now(),
         members: [],
-        applications: []
+        applications: [],
       };
       setStartups([...startups, newStartup]);
       setFormData({
@@ -94,18 +99,18 @@ export default function Feed() {
 
   const handleApply = (startupId: number, role: string, name: string) => {
     if (!name) return;
-    
-    setStartups(prevStartups => 
-      prevStartups.map(startup => {
+
+    setStartups((prevStartups) =>
+      prevStartups.map((startup) => {
         if (startup.id === startupId) {
           const newApplication: Application = {
             role,
             applicant: name,
-            status: 'pending'
+            status: "pending",
           };
           return {
             ...startup,
-            applications: [...startup.applications, newApplication]
+            applications: [...startup.applications, newApplication],
           };
         }
         return startup;
@@ -115,25 +120,29 @@ export default function Feed() {
     setApplicants({ ...applicants, [role]: "" });
   };
 
-  const handleAcceptApplication = (startupId: number, application: Application) => {
-    setStartups(prevStartups => 
-      prevStartups.map(startup => {
+  const handleAcceptApplication = (
+    startupId: number,
+    application: Application
+  ) => {
+    setStartups((prevStartups) =>
+      prevStartups.map((startup) => {
         if (startup.id === startupId) {
-          const updatedApplications = startup.applications.map(app => 
-            app.applicant === application.applicant && app.role === application.role
-              ? { ...app, status: 'accepted' as const }
+          const updatedApplications = startup.applications.map((app) =>
+            app.applicant === application.applicant &&
+            app.role === application.role
+              ? { ...app, status: "accepted" as const }
               : app
           );
 
           const newMember: TeamMember = {
             name: application.applicant,
-            role: application.role
+            role: application.role,
           };
 
           return {
             ...startup,
             applications: updatedApplications,
-            members: [...startup.members, newMember]
+            members: [...startup.members, newMember],
           };
         }
         return startup;
@@ -142,30 +151,33 @@ export default function Feed() {
   };
 
   const handleAuthSubmit = (startupId: number) => {
-    const startup = startups.find(s => s.id === startupId);
-    
+    const startup = startups.find((s) => s.id === startupId);
+
     if (!startup) {
       setAuthState({
         ...authState,
         error: "Startup not found",
-        isAuthenticated: false
+        isAuthenticated: false,
       });
       return;
     }
 
-    if (authState.ownerInput === startup.owner && authState.passwordInput === startup.password) {
+    if (
+      authState.ownerInput === startup.owner &&
+      authState.passwordInput === startup.password
+    ) {
       setAuthState({
         ...authState,
         error: "",
         isAuthenticated: true,
-        currentStartupId: startupId
+        currentStartupId: startupId,
       });
     } else {
       setAuthState({
         ...authState,
         error: "Invalid owner name or password",
         isAuthenticated: false,
-        currentStartupId: null
+        currentStartupId: null,
       });
     }
   };
@@ -176,8 +188,16 @@ export default function Feed() {
       passwordInput: "",
       error: "",
       isAuthenticated: false,
-      currentStartupId: null
+      currentStartupId: null,
     });
+  };
+
+  const handleGroupChat = (startup: Startup) => {
+    const queryParams = new URLSearchParams({
+      startupData: JSON.stringify(startup),
+    }).toString();
+
+    window.location.href = `/groupChat?${queryParams}`;
   };
 
   return (
@@ -288,6 +308,19 @@ export default function Feed() {
 
                 <div className="p-1"></div>
 
+                <Dialog>
+                  <DialogTrigger>
+                    <Button
+                      type="button"
+                      onClick={() => handleGroupChat(startup)}
+                    >
+                      Go to Group Chat
+                    </Button>
+                  </DialogTrigger>
+                </Dialog>
+
+                <div className="p-1"></div>
+
                 <Dialog onOpenChange={handleDialogClose}>
                   <DialogTrigger asChild>
                     <Button variant="outline">View Team</Button>
@@ -307,10 +340,12 @@ export default function Feed() {
                         <Input
                           id="owner"
                           value={authState.ownerInput}
-                          onChange={(e) => setAuthState({
-                            ...authState,
-                            ownerInput: e.target.value
-                          })}
+                          onChange={(e) =>
+                            setAuthState({
+                              ...authState,
+                              ownerInput: e.target.value,
+                            })
+                          }
                           className="col-span-3"
                         />
                       </div>
@@ -322,74 +357,109 @@ export default function Feed() {
                           id="password"
                           type="password"
                           value={authState.passwordInput}
-                          onChange={(e) => setAuthState({
-                            ...authState,
-                            passwordInput: e.target.value
-                          })}
+                          onChange={(e) =>
+                            setAuthState({
+                              ...authState,
+                              passwordInput: e.target.value,
+                            })
+                          }
                           className="col-span-3"
                         />
                       </div>
                       {authState.error && (
-                        <p className="text-red-500 text-center">{authState.error}</p>
+                        <p className="text-red-500 text-center">
+                          {authState.error}
+                        </p>
                       )}
-                      {authState.isAuthenticated && authState.currentStartupId === startup.id && (
-                        <div className="space-y-6">
-                          <div>
-                            <h3 className="font-medium mb-2">Current Team Members:</h3>
-                            {startup.members.length > 0 ? (
-                              <div className="space-y-2">
-                                {startup.members.map((member, index) => (
-                                  <div key={index} className="border p-2 rounded bg-black-500">
-                                    <p><strong>{member.name}</strong> - {member.role}</p>
-                                  </div>
-                                ))}
-                              </div>
-                            ) : (
-                              <p>No team members yet</p>
-                            )}
-                          </div>
-                          
-                          <div>
-                            <h3 className="font-medium mb-2">Pending Applications:</h3>
-                            {startup.applications.filter(app => app.status === 'pending').length > 0 ? (
-                              <div className="space-y-2">
-                                {startup.applications
-                                  .filter(app => app.status === 'pending')
-                                  .map((app, index) => (
-                                    <div key={index} className="border p-2 rounded flex justify-between items-center">
-                                      <div>
-                                        <p><strong>Role:</strong> {app.role}</p>
-                                        <p><strong>Applicant:</strong> {app.applicant}</p>
-                                      </div>
-                                      <Button 
-                                        onClick={() => handleAcceptApplication(startup.id, app)}
-                                        size="sm"
-                                      >
-                                        Accept
-                                      </Button>
+                      {authState.isAuthenticated &&
+                        authState.currentStartupId === startup.id && (
+                          <div className="space-y-6">
+                            <div>
+                              <h3 className="font-medium mb-2">
+                                Current Team Members:
+                              </h3>
+                              {startup.members.length > 0 ? (
+                                <div className="space-y-2">
+                                  {startup.members.map((member, index) => (
+                                    <div
+                                      key={index}
+                                      className="border p-2 rounded bg-black-500"
+                                    >
+                                      <p>
+                                        <strong>{member.name}</strong> -{" "}
+                                        {member.role}
+                                      </p>
                                     </div>
-                                  ))
-                              }
-                              </div>
-                            ) : (
-                              <p>No pending applications</p>
-                            )}
-                          </div>
-                        </div>
-                      )}
+                                  ))}
+                                </div>
+                              ) : (
+                                <p>No team members yet</p>
+                              )}
+                            </div>
 
-                      {authState.isAuthenticated && authState.currentStartupId === startup.id && (
-                        <Button 
-                          type="button" 
-                          onClick={() => window.location.href = `/groupChat`}
-                        >
-                          Go to Group Chat
-                        </Button>
-                      )}
+                            <div>
+                              <h3 className="font-medium mb-2">
+                                Pending Applications:
+                              </h3>
+                              {startup.applications.filter(
+                                (app) => app.status === "pending"
+                              ).length > 0 ? (
+                                <div className="space-y-2">
+                                  {startup.applications
+                                    .filter((app) => app.status === "pending")
+                                    .map((app, index) => (
+                                      <div
+                                        key={index}
+                                        className="border p-2 rounded flex justify-between items-center"
+                                      >
+                                        <div>
+                                          <p>
+                                            <strong>Role:</strong> {app.role}
+                                          </p>
+                                          <p>
+                                            <strong>Applicant:</strong>{" "}
+                                            {app.applicant}
+                                          </p>
+                                        </div>
+                                        <Button
+                                          onClick={() =>
+                                            handleAcceptApplication(
+                                              startup.id,
+                                              app
+                                            )
+                                          }
+                                          size="sm"
+                                        >
+                                          Accept
+                                        </Button>
+                                      </div>
+                                    ))}
+                                </div>
+                              ) : (
+                                <p>No pending applications</p>
+                              )}
+                            </div>
+                          </div>
+                        )}
+
+                      {authState.isAuthenticated &&
+                        authState.currentStartupId === startup.id && (
+                          <Button
+                            type="button"
+                            onClick={() =>
+                              (window.location.href = `/groupChat`)
+                            }
+                          >
+                            Go to Group Chat
+                          </Button>
+                        )}
                     </div>
                     <DialogFooter>
                       {!authState.isAuthenticated && (
-                        <Button type="button" onClick={() => handleAuthSubmit(startup.id)}>
+                        <Button
+                          type="button"
+                          onClick={() => handleAuthSubmit(startup.id)}
+                        >
                           Verify
                         </Button>
                       )}
